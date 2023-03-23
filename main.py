@@ -15,6 +15,7 @@ import traceback
 
 from utils import importMetadata, loadCameraParameters, getVideoExtension
 from utils import getDataDirectory, getOpenPoseDirectory, getMMposeDirectory
+from utils import getNeutralTrialID
 from utilsChecker import saveCameraParameters
 from utilsChecker import calcExtrinsicsFromVideo
 from utilsChecker import isCheckerboardUpsideDown
@@ -359,6 +360,7 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
                 sessionMetadata['height_m'], pathAugmentedOutputFiles[trialName],
                 augmenterDir, augmenterModelName=augmenterModel,
                 augmenter_model=augmenter_model, offset=offset)
+            print('Marker Augmented')
         except Exception as e:
             if len(e.args) == 2: # specific exception
                 raise Exception(e.args[0], e.args[1])
@@ -368,10 +370,12 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
         if offset:
             # If offset, no need to offset again for the webapp visualization.
             # (0.01 so that there is no overall offset, see utilsOpenSim).
-            vertical_offset = 0.01            
+            vertical_offset = 0.01 
+      
         
     # %% OpenSim pipeline.
     if runOpenSimPipeline:
+        print('Running openSimPipeline')
         openSimPipelineDir = os.path.join(baseDir, "opensimPipeline")        
         
         if genericFolderNames:
@@ -388,16 +392,17 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
         
         # Scaling.    
         if scaleModel:
+            print('Scaling model')
             os.makedirs(outputScaledModelDir, exist_ok=True)
             # Path setup file.
             genericSetupFile4ScalingName = (
-                'Setup_scaling_RajagopalModified2016_withArms_KA.xml')
+                'SETUP_Scale_FBLS.xml')
             pathGenericSetupFile4Scaling = os.path.join(
                 openSimPipelineDir, 'Scaling', genericSetupFile4ScalingName)
             # Path model file.
             pathGenericModel4Scaling = os.path.join(
                 openSimPipelineDir, 'Models', 
-                sessionMetadata['openSimModel'] + '.osim')            
+                'FBLSmodel'+ '.osim')        ####model change      
             # Path TRC file.
             pathTRCFile4Scaling = pathAugmentedOutputFiles[trialName]
             # Get time range.
@@ -423,10 +428,13 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
             staticImagesFolderDir = os.path.join(sessionDir, 
                                                  'NeutralPoseImages')
             os.makedirs(staticImagesFolderDir, exist_ok=True)
+
             popNeutralPoseImages(cameraDirectories, cameras2Use, 
                                  timeRange4Scaling[0], staticImagesFolderDir,
-                                 trial_id, writeVideo = True)   
+                                 trial_id, writeVideo = True)  
+             
             pathOutputIK = pathScaledModel[:-5]+'.mot'     
+            print('Finished scaling')
         
         # Inverse kinematics.
         if not scaleModel:
@@ -434,11 +442,11 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
             os.makedirs(outputIKDir, exist_ok=True)
             # Check if there is a scaled model.
             pathScaledModel = os.path.join(outputScaledModelDir, 
-                                            sessionMetadata['openSimModel'] + 
-                                            "_scaled.osim")
+                                            'FBLSmodel' + 
+                                            "_scaled.osim")         ##CHANGE MODEL NAME
             if os.path.exists(pathScaledModel):
                 # Path setup file.
-                genericSetupFile4IKName = 'Setup_IK.xml'
+                genericSetupFile4IKName = 'SETUP_IK_FBLS.xml'
                 pathGenericSetupFile4IK = os.path.join(
                     openSimPipelineDir, 'IK', genericSetupFile4IKName)
                 # Path TRC file.
@@ -448,7 +456,7 @@ def main(sessionName, trialName, trial_id, camerasToUse=['all'],
                 try:
                     pathOutputIK = runIKTool(
                         pathGenericSetupFile4IK, pathScaledModel, 
-                        pathTRCFile4IK, outputIKDir)
+                        pathTRCFile4IK, outputIKDir, timeRange=[0 , 11.7]) #hard coded time of processing
                 except Exception as e:
                     if len(e.args) == 2: # specific exception
                         raise Exception(e.args[0], e.args[1])

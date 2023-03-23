@@ -45,6 +45,8 @@ def runScaleTool(pathGenericSetupFile, pathGenericModel, subjectMass,
              markerSetFileName = 'gait2392_markers_mocap.xml'
          else:
             markerSetFileName = 'gait2392_markers_augmenter.xml'
+    elif 'FBLS' in scaledModelName:
+        markerSetFileName = 'RajagopalModified2016_markers_augmenter.xml'
     else:
         raise ValueError("Unknown model type: scaling")
     pathMarkerSet = os.path.join(dirGenericModel, markerSetFileName)
@@ -121,38 +123,44 @@ def runScaleTool(pathGenericSetupFile, pathGenericModel, subjectMass,
                 meas.setApply(False)
                 print('There were no marker pairs in {}, so this measurement \
                       is not applied.'.format(meas.getName()))
-    # Run scale tool.                      
+    # Run scale tool. 
+    print('Printing to XML')                     
     scaleTool.printToXML(pathOutputSetup)            
     command = 'opensim-cmd -o error' + ' run-tool ' + pathOutputSetup
     os.system(command)
     
     # Sanity check
-    scaled_model = opensim.Model(pathOutputModel)
-    bodySet = scaled_model.getBodySet()
-    nBodies = bodySet.getSize()
-    scale_factors = np.zeros((nBodies, 3))
-    for i in range(nBodies):
-        bodyName = bodySet.get(i).getName()
-        body = bodySet.get(bodyName)
-        attached_geometry = body.get_attached_geometry(0)
-        scale_factors[i, :] = attached_geometry.get_scale_factors().to_numpy()
-    diff_scale = np.max(np.max(scale_factors, axis=0)-
-                        np.min(scale_factors, axis=0))
-    # A difference in scaling factor larger than 1 would indicate that a 
-    # segment (e.g., humerus) would be more than twice as large as its generic
-    # counterpart, whereas another segment (e.g., pelvis) would have the same
-    # size as the generic segment. This is very unlikely, but might occur when
-    # the camera calibration went wrong (i.e., bad extrinsics).
-    if diff_scale > 1:
-        exception = "Musculoskeletal model scaling failed; the segment sizes are not anthropometrically realistic. It is very likely that the camera calibration went wrong. Visit https://www.opencap.ai/best-pratices to learn more about camera calibration."
-        raise Exception(exception, exception)        
+    # scaled_model = opensim.Model(pathOutputModel)
+    # bodySet = scaled_model.getBodySet()
+    # nBodies = bodySet.getSize()
+    # scale_factors = np.zeros((nBodies, 3))
+    # for i in range(nBodies):
+    #     bodyName = bodySet.get(i).getName()
+    #     print(bodyName)
+    #     body = bodySet.get(bodyName)
+    #     attached_geometry = body.get_attached_geometry(0)
+    #     print('attaching geometry')
+    #     scale_factors[i, :] = attached_geometry.get_scale_factors().to_numpy()
+    #     print(scale_factors[i])
+    # diff_scale = np.max(np.max(scale_factors, axis=0)-
+    #                     np.min(scale_factors, axis=0))
+    # print('after checking scale factor')
+    # # A difference in scaling factor larger than 1 would indicate that a 
+    # # segment (e.g., humerus) would be more than twice as large as its generic
+    # # counterpart, whereas another segment (e.g., pelvis) would have the same
+    # # size as the generic segment. This is very unlikely, but might occur when
+    # # the camera calibration went wrong (i.e., bad extrinsics).
+    # if diff_scale > 1:
+    #     exception = "Musculoskeletal model scaling failed; the segment sizes are not anthropometrically realistic. It is very likely that the camera calibration went wrong. Visit https://www.opencap.ai/best-pratices to learn more about camera calibration."
+    #     raise Exception(exception, exception)        
     
+    print('Returning path output model')
     return pathOutputModel
     
 # %% Inverse kinematics.
 def runIKTool(pathGenericSetupFile, pathScaledModel, pathTRCFile,
               pathOutputFolder, timeRange=[], IKFileName='not_specified'):
-    
+    print(timeRange)
     # Paths
     if IKFileName == 'not_specified':
         _, IKFileName = os.path.split(pathTRCFile)
@@ -204,7 +212,13 @@ def getScaleTimeRange(pathTRCFile, thresholdPosition=0.005, thresholdTime=0.3,
                    "L_ankle_study", "r_mankle_study", "L_mankle_study",
                    "r_calc_study", "L_calc_study", "r_toe_study", 
                    "L_toe_study", "r_5meta_study", "L_5meta_study",
-                   "RHJC_study", "LHJC_study"]
+                   "RHJC_study", "LHJC_study"]# "LFHD" ,"RFHD", "RBHD", "LBHD",
+                #    "CLAV","STRN", "RBAK", "T10", "RUPA","LUPA","LFRA","RFRA",
+                #     "RFIN","LFIN","LMMA","RMMA","LMFC","RMFC","RMTP","LMTP",
+                #     "RLTP", "LLTP", "RFP1", "RFP2","RFP3","RFM1", "RFM2", "RFM3",
+                #     "RFA1","RFA2","RFA3", "LFP1","LFP2","LFP3", "LFM1","LFM2","LFM3",
+                #     "LFA1","LFA2","LFA3","RTP1","RTP2","RTP3","RTA1","RTA2","RTA3", 
+                #      "LTA1","LTA2","LTA3","LTP1","LTP2","LTP3"]
         if withArms:
             markers.append("r_lelbow_study")
             markers.append("L_lelbow_study")

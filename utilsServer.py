@@ -84,6 +84,7 @@ def processTrial(session_id, trial_id, trial_type = 'dynamic',
         # download the videos
         trial_name = downloadVideosFromServer(session_id,trial_id,isDocker=isDocker,
                                  isCalibration=False,isStaticPose=True)
+        print('downloading static trial video')
         
         # run static
         try:
@@ -103,7 +104,8 @@ def processTrial(session_id, trial_id, trial_type = 'dynamic',
             raise Exception('Static trial failed')
         
         if not hasWritePermissions:
-            print('You are not the owner of this session, so do not have permission to write results to database.')
+            
+            ('You are not the owner of this session, so do not have permission to write results to database.')
             return
         
         # Write videos to django
@@ -134,17 +136,22 @@ def processTrial(session_id, trial_id, trial_type = 'dynamic',
         getModelAndMetadata(session_id,session_path)
         
         # download the videos
+        print('downloading dynamic video')
         trial_name = downloadVideosFromServer(
             session_id, trial_id, isDocker=isDocker, isCalibration=False,
             isStaticPose=False)
         
+        
         # run dynamic
         try:
+            print('Running dynamic trial')
             main(session_name, trial_name, trial_id, isDocker=isDocker, extrinsicsTrial=False,
                  poseDetector=poseDetector,
                  imageUpsampleFactor=imageUpsampleFactor,
                  resolutionPoseDetection = resolutionPoseDetection,
                  genericFolderNames = True)
+            print('Finished running dynamic trial')
+            
         except Exception as e:
             error_msg = {}
             error_msg['error_msg'] = e.args[0]
@@ -279,6 +286,7 @@ def batchReprocess(session_ids,calib_id,static_id,dynamic_ids,poseDetector='Open
         
         if static_id == None:
             static_id_toProcess = getNeutralTrialID(session_id)
+            print('static id to process: ' + static_id_toProcess)
         else:
             static_id_toProcess = static_id
         
@@ -292,6 +300,8 @@ def batchReprocess(session_ids,calib_id,static_id,dynamic_ids,poseDetector='Open
                               deleteLocalFolder = deleteLocalFolder,
                               isDocker=isServer,
                               hasWritePermissions = hasWritePermissions)
+                
+
                 statusData = {'status':'done'}
                 _ = requests.patch("https://api.opencap.ai/trials/{}/".format(static_id_toProcess), data=statusData,
                          headers = {"Authorization": "Token {}".format(API_TOKEN)})
@@ -300,11 +310,14 @@ def batchReprocess(session_ids,calib_id,static_id,dynamic_ids,poseDetector='Open
                 statusData = {'status':'error'}
                 _ = requests.patch("https://api.opencap.ai/trials/{}/".format(static_id_toProcess), data=statusData,
                          headers = {"Authorization": "Token {}".format(API_TOKEN)})
+        
+        
         if dynamic_ids == None:
-
+            print('getting dynamic ids')
             session = requests.get("https://api.opencap.ai/sessions/{}/".format(session_id),
                                    headers = {"Authorization": "Token {}".format(API_TOKEN)}).json()
             dynamic_ids_toProcess = [t['id'] for t in session['trials'] if (t['name'] != 'calibration' and t['name'] !='neutral')]
+            
         else:
             if type(dynamic_ids) == str:
                 dynamic_ids_toProcess = [dynamic_ids]

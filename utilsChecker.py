@@ -2919,7 +2919,8 @@ def popNeutralPoseImages(cameraDirectories, camerasToUse, tSingleImage,
     
     cameraDirectories_selectedCams = {}
     for iCam,cam in enumerate(cameras2Use):
-        cameraDirectories_selectedCams[cam] = cameraDirectories[cam]                
+        cameraDirectories_selectedCams[cam] = cameraDirectories[cam]  
+        print('problematicVideo')              
         videoPath = os.path.join(cameraDirectories_selectedCams[cam], 
                                  'InputMedia', 'neutral', 
                                  '{}_rotated.avi'.format(trial_id))
